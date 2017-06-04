@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+           http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+           http://www.springframework.org/schema/context
+           http://www.springframework.org/schema/context/spring-context-2.5.xsd
+           http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-2.5.xsd
+           http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-2.5.xsd">
+
+	<!-- 写了自动扫描配置就不需要，<context:annotation-config /> 不需要这个节点，因为自动扫描会把注解配置处理器一并注册上 -->
+     <context:component-scan base-package="cn.com" />  
+
+	    <!-- 载入属性文件(sping3 以上版本) --> 					
+    <context:property-placeholder location="classpath:jdbc.properties"/>
+	
+
+    <!-- properties 配置dbcp -->
+   <bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
+      <property name="driverClassName" value="${jdbc.driverClassName}"></property>
+      <property name="url" value="${jdbc.url}"></property>
+      <property name="username" value="${jdbc.username}"></property>
+      <property name="password" value="${jdbc.password}"></property>
+        <!--maxActive: 最大连接数量-->    
+        <property name="maxActive" value="150"/>  
+        <!--minIdle: 最小空闲连接-->    
+        <property name="minIdle" value="5"/>  
+        <!--maxIdle: 最大空闲连接-->    
+        <property name="maxIdle" value="20"/>  
+        <!--initialSize: 初始化连接-->    
+        <property name="initialSize" value="30"/> 
+        <!-- 连接被泄露时是否打印 -->  
+        <property name="logAbandoned" value="true"/>  
+        <!--removeAbandoned: 是否自动回收超时连接-->    
+        <property name="removeAbandoned"  value="true"/>  
+        <!--removeAbandonedTimeout: 超时时间(以秒数为单位)-->    
+        <property name="removeAbandonedTimeout" value="10"/>  
+        <!--maxWait: 超时等待时间以毫秒为单位 1000等于60秒-->  
+        <property name="maxWait" value="1000"/>  
+        <!-- 在空闲连接回收器线程运行期间休眠的时间值,以毫秒为单位. -->  
+        <property name="timeBetweenEvictionRunsMillis" value="10000"/>  
+        <!--  在每次空闲连接回收器线程(如果有)运行时检查的连接数量 -->  
+        <property name="numTestsPerEvictionRun" value="10"/>  
+        <!-- 1000 * 60 * 30  连接在池中保持空闲而不被空闲连接回收器线程-->  
+        <property name="minEvictableIdleTimeMillis" value="10000"/>
+        <!-- 数据库连接有效性 -->
+        <property name="validationQuery" value="SELECT NOW() FROM DUAL"/>     
+   </bean>
+   
+   	<bean id="dataSource_c3p0" class="com.mchange.v2.c3p0.ComboPooledDataSource" destroy-method="close">
+			<property name="driverClass" value="${jdbc.driverClassName}"/>
+			<property name="jdbcUrl" value="${jdbc.url}"/> 
+			<property name="user" value="${jdbc.username}"/> 
+            <property name="password" value="${jdbc.password}"/>
+			<property name="minPoolSize" value="5"/>
+			<property name="maxPoolSize" value="30"/>
+			<property name="initialPoolSize" value="10"/>
+			<property name="maxIdleTime" value="60"/>
+			<property name="acquireIncrement" value="5"/>
+			<property name="maxStatements" value="0"/>
+			<property name="idleConnectionTestPeriod" value="60"/>
+			<property name="acquireRetryAttempts" value="30"/>
+			<property name="breakAfterAcquireFailure" value="true"/>
+			<property name="testConnectionOnCheckout" value="false"/>
+	</bean>
+    
+   
+    <bean id="sessionFactory" class="org.springframework.orm.hibernate5.LocalSessionFactoryBean">  
+   	    <!-- 载入hibernate。cfx。xml 方式不常用 -->
+   	    <!-- <property name="configLocation" value="classpath:hibernate.cfg.xml"></property>  -->      
+   	    <property name="dataSource" ref="dataSource_c3p0"> </property>  
+   	    <!-- 加载实体类配置文件 -->
+   	    <!-- 
+   	    <property name="mappingResources">
+   	        <list>
+   	            <value>cn/com/entity/Student.hbm.xml</value>
+   	        </list>
+   	    </property> 
+   	      -->
+   	    <!-- 注解方式方式1(常用) -->
+   	    <!-- 配置映射目录要比实际少一层, 比如：实体类存放在com.demo.entity包下， 则路径就要配为 <property name="packagesToScan"value="com.demo.*"/> -->
+   	     <property name="packagesToScan">
+   	        <list>
+   	         <!-- <value>cn.com.entity</value> --> 
+   	          <value>cn.com.*</value> 
+   	        </list>
+   	    </property>
+   	    <!--注解方法2-->
+   	    <!--
+   	    <property name="annotatedClasses">
+   	        <list>
+   	            <value>cn.com.entity.Teacher</value> 
+   	        </list>
+   	    </property>
+   	    -->
+   	   <!-- 设置hibernate的属性，相当于hibernate.cfg.xml中的设置属性 -->
+   	     <property name="hibernateProperties">
+   	         <props>
+   	             <prop key="hibernate.dialect">
+   	                 org.hibernate.dialect.MySQLDialect
+   	             </prop>
+   	             <prop key="hbm2ddl.auto">update</prop>
+   	             <prop key="hibernate.show_sql">ture</prop>
+   	         </props>
+   	     </property>
+   	</bean>
+  <!-- 登录 -->
+   	<bean id="loginDao" class="cn.com.dao.imp.LoginDao">
+   	    <property name="sessionFactory" ref="sessionFactory"></property>
+   	</bean>
+ 	
+   <!-- 编辑dao -->
+   	<bean id="editDao" class="cn.com.dao.imp.EditDao">
+   	    <property name="sessionFactory" ref="sessionFactory"></property>
+   	</bean>	
+   	
+</beans>
+
