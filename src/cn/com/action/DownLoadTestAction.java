@@ -24,7 +24,7 @@ public class DownLoadTestAction extends HttpServlet {
 	public void fileLoad(HttpServletRequest request, HttpServletResponse response){
 		
        //测试git
-		int git =1;
+		//int git =1;
 		try {
 		
 			//得到要下载的文件名
